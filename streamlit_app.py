@@ -306,6 +306,15 @@ if tech_q:
 st.write(f"Showing **{len(filtered)}** jobs after filters.")
 
 # --------- Table display ---------
+# First: create human-friendly versions for display
+filtered = filtered.copy()
+filtered["remote_policy_pretty"] = (
+    filtered["remote_policy"].map(REMOTE_LABELS).fillna(filtered["remote_policy"])
+)
+filtered["seniority_pretty"] = (
+    filtered["seniority_norm"].map(SENIORITY_LABELS).fillna(filtered["seniority_norm"])
+)
+
 display_cols = [
     "title",
     "company",
@@ -319,11 +328,9 @@ display_cols = [
     "link",
 ]
 
-
 existing_cols = [c for c in display_cols if c in filtered.columns]
 
 # Human-friendly labels for each column
-
 col_labels = {
     "title": "Job title",
     "company": "Company",
@@ -336,6 +343,7 @@ col_labels = {
     "source": "Source",
     "link": "Apply / Job link",
 }
+
 # Build column_config with nice labels
 column_config = {
     "link": st.column_config.LinkColumn(col_labels["link"]),
@@ -347,11 +355,6 @@ for col in existing_cols:
     if col not in column_config:
         label = col_labels.get(col, col)
         column_config[col] = st.column_config.TextColumn(label)
-
-# Create human-friendly versions for display
-filtered = filtered.copy()
-filtered["remote_policy_pretty"] = filtered["remote_policy"].map(REMOTE_LABELS).fillna(filtered["remote_policy"])
-filtered["seniority_pretty"] = filtered["seniority_norm"].map(SENIORITY_LABELS).fillna(filtered["seniority_norm"])
 
 st.data_editor(
     filtered[existing_cols],
