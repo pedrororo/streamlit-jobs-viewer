@@ -60,6 +60,27 @@ TIMEZONE_DETAILS = {
     "AEDT": "Australian Eastern Daylight Time (UTC+11)",
 }
 
+REMOTE_LABELS = {
+    "hybrid": "Hybrid",
+    "on_site": "On-site",
+    "remote_first": "Remote-first",
+    "remote_only": "Remote-only",
+    "unspecified": "Unspecified",
+}
+
+SENIORITY_LABELS = {
+    "intern": "Intern",
+    "junior": "Junior",
+    "mid": "Mid-level",
+    "senior": "Senior",
+    "staff": "Staff",
+    "principal": "Principal",
+    "lead": "Lead",
+    "manager": "Manager",
+    "director": "Director",
+    "vp": "VP",
+    "c_level": "C-level",
+}
 
 
 
@@ -174,6 +195,7 @@ if layout_mode.startswith("🖥️"):
         "Seniority",
         options=seniority_options,
         default=[],
+        format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
     )
 
     selected_job_types = st.sidebar.multiselect(
@@ -186,8 +208,8 @@ if layout_mode.startswith("🖥️"):
         "Remote policy",
         options=remote_options,
         default=[],
+        format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
     )
-
     location_q = st.sidebar.text_input("Location contains", "")
 
     selected_tz_human = st.sidebar.multiselect(
@@ -211,6 +233,7 @@ else:
             "Seniority",
             options=seniority_options,
             default=[],
+            format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
         )
 
         selected_job_types = st.multiselect(
@@ -223,6 +246,7 @@ else:
             "Remote policy",
             options=remote_options,
             default=[],
+            format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
         )
 
         location_q = st.text_input("Location contains", "")
@@ -286,9 +310,9 @@ display_cols = [
     "title",
     "company",
     "location",
-    "seniority_norm",
+    "seniority_pretty",
     "job_type",
-    "remote_policy",
+    "remote_policy_pretty",
     "timezone_overlap",
     "posted_date",
     "source",
@@ -299,19 +323,19 @@ display_cols = [
 existing_cols = [c for c in display_cols if c in filtered.columns]
 
 # Human-friendly labels for each column
+
 col_labels = {
     "title": "Job title",
     "company": "Company",
     "location": "Location",
-    "seniority_norm": "Seniority",
+    "seniority_pretty": "Seniority",
     "job_type": "Job type",
-    "remote_policy": "Remote policy",
+    "remote_policy_pretty": "Remote policy",
     "timezone_overlap": "Timezone overlap",
     "posted_date": "Posted",
     "source": "Source",
     "link": "Apply / Job link",
 }
-
 # Build column_config with nice labels
 column_config = {
     "link": st.column_config.LinkColumn(col_labels["link"]),
@@ -323,6 +347,11 @@ for col in existing_cols:
     if col not in column_config:
         label = col_labels.get(col, col)
         column_config[col] = st.column_config.TextColumn(label)
+
+# Create human-friendly versions for display
+filtered = filtered.copy()
+filtered["remote_policy_pretty"] = filtered["remote_policy"].map(REMOTE_LABELS).fillna(filtered["remote_policy"])
+filtered["seniority_pretty"] = filtered["seniority_norm"].map(SENIORITY_LABELS).fillna(filtered["seniority_norm"])
 
 st.data_editor(
     filtered[existing_cols],
