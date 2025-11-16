@@ -40,10 +40,16 @@ def load_jobs(path: Path) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # Try to parse posted_at as datetime for sorting
+    # Try to parse posted_at as datetime for sorting + create nice date string
     if "posted_at" in df.columns:
-        df["posted_at_dt"] = pd.to_datetime(df["posted_at"], errors="coerce")
+        # Handle ISO strings like 2025-11-15T00:36:09Z
+        df["posted_at_dt"] = pd.to_datetime(df["posted_at"], errors="coerce", utc=True)
         df = df.sort_values("posted_at_dt", ascending=False)
+
+        # New column: YYYY-MM-DD (year-month-day)
+        df["posted_date"] = df["posted_at_dt"].dt.strftime("%Y-%m-%d")
+    else:
+        df["posted_date"] = ""
 
     # Ensure some optional columns exist so filters don’t crash
     for col in [
@@ -79,6 +85,7 @@ st.caption(
     "Daily curated remote jobs by "
     "[Pedro Arroyo](https://www.linkedin.com/in/pedro-andre-arroyo-silva/)"
 )
+st.caption("📅 Dates shown as **YYYY-MM-DD** (year-month-day).")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
@@ -189,18 +196,43 @@ display_cols = [
     "job_type",
     "remote_policy",
     "timezone_overlap",
-    "posted_at",
+    "posted_date",
     "source",
     "link",
 ]
 
+
 existing_cols = [c for c in display_cols if c in filtered.columns]
+
+# Human-friendly labels for each column
+col_labels = {
+    "title": "Job title",
+    "company": "Company",
+    "location": "Location",
+    "seniority_norm": "Seniority",
+    "job_type": "Job type",
+    "remote_policy": "Remote policy",
+    "timezone_overlap": "Timezone overlap",
+    "posted_date": "Posted (YYYY-MM-DD)",
+    "source": "Source",
+    "link": "Apply / Job link",
+}
+
+# Build column_config with nice labels
+column_config = {
+    "link": st.column_config.LinkColumn(col_labels["link"]),
+    "posted_date": st.column_config.TextColumn(col_labels["posted_date"]),
+}
+
+# For the remaining columns, use TextColumn with friendly names
+for col in existing_cols:
+    if col not in column_config:
+        label = col_labels.get(col, col)
+        column_config[col] = st.column_config.TextColumn(label)
 
 st.data_editor(
     filtered[existing_cols],
-    column_config={
-        "link": st.column_config.LinkColumn("Job link"),
-    },
+    column_config=column_config,
     hide_index=True,
     use_container_width=True,
 )
