@@ -53,8 +53,8 @@ if not DATA_PATH.exists():
 df = load_jobs(DATA_PATH)
 
 # --------- Header ---------
-st.title("🌐 Remote Jobs Explorer")
-st.caption("Daily curated remote jobs from your local `fetch_jobs.py` pipeline.")
+st.title("🌐 Remote/Hybrid Jobs Explorer")
+st.caption("Daily curated remote jobs")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
