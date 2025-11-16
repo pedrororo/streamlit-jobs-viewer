@@ -10,6 +10,25 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- Hide Streamlit Cloud toolbar / GitHub / menu / footer ---
+st.markdown(
+    """
+    <style>
+    /* Top-right toolbar (includes GitHub/fork link on Streamlit Cloud) */
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+
+    /* Optional: hide footer "Made with Streamlit" */
+    footer {visibility: hidden !important;}
+
+    /* Optional: hide the top header decoration bar */
+    [data-testid="stDecoration"] {visibility: hidden !important;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+
 # --------- Data loader ---------
 @st.cache_data
 def load_jobs(path: Path) -> pd.DataFrame:
@@ -56,7 +75,10 @@ df = load_jobs(DATA_PATH)
 
 # --------- Header ---------
 st.title("🌐 Remote/Hybrid Jobs Explorer")
-st.caption("Daily curated remote jobs by https://www.linkedin.com/in/pedro-andre-arroyo-silva/")
+st.caption(
+    "Daily curated remote jobs by "
+    "[Pedro Arroyo](https://www.linkedin.com/in/pedro-andre-arroyo-silva/)"
+)
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
