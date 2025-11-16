@@ -16,7 +16,7 @@ def load_jobs(path: Path) -> pd.DataFrame:
     # Your CSV uses ';' as delimiter
     df = pd.read_csv(path, sep=";")
 
-    # Coerce salary columns to numeric (they’re strings in the CSV)
+    # Coerce salary columns to numeric (still useful for later, but not shown)
     for col in ["salary_min", "salary_max", "salary_annual_min", "salary_annual_max"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -45,9 +45,11 @@ def load_jobs(path: Path) -> pd.DataFrame:
     return df
 
 if not DATA_PATH.exists():
-    st.error(f"CSV not found at: {DATA_PATH}\n\n"
-             "Put a file like jobs_refined_YYYY-MM-DD_HH-MM-SS.csv "
-             "there and/or rename it to jobs_latest.csv.")
+    st.error(
+        f"CSV not found at: {DATA_PATH}\n\n"
+        "Put a file like jobs_refined_YYYY-MM-DD_HH-MM-SS.csv "
+        "there and/or rename it to jobs_latest.csv."
+    )
     st.stop()
 
 df = load_jobs(DATA_PATH)
@@ -66,7 +68,8 @@ q = st.sidebar.text_input("Search in title / company", "")
 
 # Seniority (normalized)
 seniority_options = sorted(
-    s for s in df["seniority_norm"].dropna().unique()
+    s
+    for s in df["seniority_norm"].dropna().unique()
     if str(s).strip() and str(s).lower() != "unspecified"
 )
 selected_seniority = st.sidebar.multiselect(
@@ -77,8 +80,7 @@ selected_seniority = st.sidebar.multiselect(
 
 # Job type
 job_type_options = sorted(
-    s for s in df["job_type"].dropna().unique()
-    if str(s).strip()
+    s for s in df["job_type"].dropna().unique() if str(s).strip()
 )
 selected_job_types = st.sidebar.multiselect(
     "Job type",
@@ -88,8 +90,7 @@ selected_job_types = st.sidebar.multiselect(
 
 # Remote policy
 remote_options = sorted(
-    s for s in df["remote_policy"].dropna().unique()
-    if str(s).strip()
+    s for s in df["remote_policy"].dropna().unique() if str(s).strip()
 )
 selected_remote = st.sidebar.multiselect(
     "Remote policy",
@@ -102,8 +103,7 @@ location_q = st.sidebar.text_input("Location contains", "")
 
 # Timezone overlap
 tz_options = sorted(
-    s for s in df["timezone_overlap"].dropna().unique()
-    if str(s).strip()
+    s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
 )
 selected_tz = st.sidebar.multiselect(
     "Timezone overlap",
@@ -113,21 +113,6 @@ selected_tz = st.sidebar.multiselect(
 
 # Very simple tech search across all tech_stack.* columns
 tech_q = st.sidebar.text_input("Tech stack contains", "")
-
-# Salary slider (only if we have reasonable data)
-salary_min = df["salary_annual_min"].min()
-salary_max = df["salary_annual_max"].max()
-if pd.notna(salary_min) and pd.notna(salary_max) and salary_max > salary_min:
-    salary_range = st.sidebar.slider(
-        "Annual salary range",
-        int(salary_min),
-        int(salary_max),
-        (int(salary_min), int(salary_max)),
-        step=1000,
-    )
-else:
-    salary_range = None
-
 
 # --------- Apply filters ---------
 filtered = df.copy()
@@ -157,7 +142,6 @@ if location_q:
 if selected_tz:
     filtered = filtered[filtered["timezone_overlap"].isin(selected_tz)]
 
-# Very simple tech search across all tech_stack.* columns
 if tech_q:
     t = tech_q.lower()
     tech_cols = [
@@ -172,18 +156,6 @@ if tech_q:
         mask = mask | filtered[col].fillna("").str.lower().str.contains(t)
     filtered = filtered[mask]
 
-# Salary range filter
-if salary_range is not None:
-    low, high = salary_range
-    mask = (
-        (filtered["salary_annual_min"].isna() & filtered["salary_annual_max"].isna())
-        | (
-            (filtered["salary_annual_min"] <= high)
-            & (filtered["salary_annual_max"] >= low)
-        )
-    )
-    filtered = filtered[mask]
-
 st.write(f"Showing **{len(filtered)}** jobs after filters.")
 
 # --------- Table display ---------
@@ -195,8 +167,6 @@ display_cols = [
     "job_type",
     "remote_policy",
     "timezone_overlap",
-    "salary_annual_min",
-    "salary_annual_max",
     "posted_at",
     "source",
     "link",
@@ -208,8 +178,6 @@ st.data_editor(
     filtered[existing_cols],
     column_config={
         "link": st.column_config.LinkColumn("Job link"),
-        "salary_annual_min": st.column_config.NumberColumn("Salary min (annual)"),
-        "salary_annual_max": st.column_config.NumberColumn("Salary max (annual)"),
     },
     hide_index=True,
     use_container_width=True,
