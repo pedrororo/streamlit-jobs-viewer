@@ -27,6 +27,40 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# --------- Timezone info (expanded/human-friendly) ---------
+TIMEZONE_DETAILS = {
+    "PST": "Pacific Standard Time (UTC-8) — e.g., California, Washington",
+    "PDT": "Pacific Daylight Time (UTC-7, summer)",
+    "PT":  "Pacific Time (PST/PDT)",
+    "MST": "Mountain Standard Time (UTC-7) — e.g., Colorado, Arizona (winter)",
+    "MDT": "Mountain Daylight Time (UTC-6, summer)",
+    "MT":  "Mountain Time (MST/MDT)",
+    "CST": "Central Standard Time (UTC-6) — e.g., Texas, Illinois",
+    "CDT": "Central Daylight Time (UTC-5, summer)",
+    "CT":  "Central Time (CST/CDT)",
+    "EST": "Eastern Standard Time (UTC-5) — e.g., New York, Boston, Miami",
+    "EDT": "Eastern Daylight Time (UTC-4, summer)",
+    "ET":  "Eastern Time (EST/EDT)",
+    
+    "GMT": "Greenwich Mean Time (UTC+0)",
+    "BST": "British Summer Time (UTC+1) — UK summer",
+    
+    "CET": "Central European Time (UTC+1) — e.g., Germany, France",
+    "CEST": "Central European Summer Time (UTC+2)",
+    
+    "EET": "Eastern European Time (UTC+2)",
+    "EEST": "Eastern European Summer Time (UTC+3)",
+
+    "IST": "India Standard Time (UTC+5:30)",
+    "WAT": "West Africa Time (UTC+1)",
+    "EAT": "East Africa Time (UTC+3)",
+    
+    "JST": "Japan Standard Time (UTC+9)",
+    "AEST": "Australian Eastern Standard Time (UTC+10)",
+    "AEDT": "Australian Eastern Daylight Time (UTC+11)",
+}
+
+
 
 
 # --------- Data loader ---------
@@ -134,11 +168,25 @@ location_q = st.sidebar.text_input("Location contains", "")
 tz_options = sorted(
     s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
 )
-selected_tz = st.sidebar.multiselect(
+# Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
+tz_options_human = [
+    f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
+    for tz in tz_options
+]
+
+# Selection box uses human labels
+selected_tz_human = st.sidebar.multiselect(
     "Timezone overlap",
-    options=tz_options,
+    options=tz_options_human,
     default=[],
+    help="Choose the timezones companies expect you to overlap with."
 )
+
+# Convert back to raw timezone codes
+selected_tz = [
+    tz.split(" — ")[0] for tz in selected_tz_human
+]
+
 
 # Very simple tech search across all tech_stack.* columns
 tech_q = st.sidebar.text_input("Tech stack contains", "")
@@ -213,7 +261,7 @@ col_labels = {
     "job_type": "Job type",
     "remote_policy": "Remote policy",
     "timezone_overlap": "Timezone overlap",
-    "posted_date": "Posted (YYYY-MM-DD)",
+    "posted_date": "Posted",
     "source": "Source",
     "link": "Apply / Job link",
 }
