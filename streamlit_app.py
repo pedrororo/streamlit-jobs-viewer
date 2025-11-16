@@ -56,7 +56,7 @@ df = load_jobs(DATA_PATH)
 
 # --------- Header ---------
 st.title("🌐 Remote/Hybrid Jobs Explorer")
-st.caption("Daily curated remote jobs")
+st.caption("Daily curated remote jobs by https://www.linkedin.com/in/pedro-andre-arroyo-silva/")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
@@ -75,7 +75,7 @@ seniority_options = sorted(
 selected_seniority = st.sidebar.multiselect(
     "Seniority",
     options=seniority_options,
-    default=seniority_options,
+    default=[],
 )
 
 # Job type
@@ -85,7 +85,7 @@ job_type_options = sorted(
 selected_job_types = st.sidebar.multiselect(
     "Job type",
     options=job_type_options,
-    default=job_type_options,
+    default=[],
 )
 
 # Remote policy
@@ -95,7 +95,7 @@ remote_options = sorted(
 selected_remote = st.sidebar.multiselect(
     "Remote policy",
     options=remote_options,
-    default=remote_options,
+    default=[],
 )
 
 # Location contains
@@ -108,7 +108,7 @@ tz_options = sorted(
 selected_tz = st.sidebar.multiselect(
     "Timezone overlap",
     options=tz_options,
-    default=tz_options,
+    default=[],
 )
 
 # Very simple tech search across all tech_stack.* columns
