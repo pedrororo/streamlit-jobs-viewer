@@ -123,74 +123,119 @@ st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
-# --------- Filters (in main page, works better on mobile) ---------
-with st.expander("Filters", expanded=True):
-    st.subheader("Filters")
+# --------- Prepare filter option lists (shared) ---------
+seniority_options = sorted(
+    s
+    for s in df["seniority_norm"].dropna().unique()
+    if str(s).strip() and str(s).lower() != "unspecified"
+)
 
-    # Text search (title + company)
-    q = st.text_input("Search in Job title / Company", "")
+job_type_options = sorted(
+    s for s in df["job_type"].dropna().unique() if str(s).strip()
+)
 
-    # Seniority (normalized)
-    seniority_options = sorted(
-        s
-        for s in df["seniority_norm"].dropna().unique()
-        if str(s).strip() and str(s).lower() != "unspecified"
-    )
-    selected_seniority = st.multiselect(
+remote_options = sorted(
+    s for s in df["remote_policy"].dropna().unique() if str(s).strip()
+)
+
+tz_options = sorted(
+    s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
+)
+# Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
+tz_options_human = [
+    f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
+    for tz in tz_options
+]
+
+# --------- Layout selector (PC vs Mobile) ---------
+layout_mode = st.radio(
+    "Layout mode",
+    ("🖥️ Desktop (sidebar filters)", "📱 Mobile (top filters)"),
+    horizontal=True,
+)
+
+# Initialize variables so they exist in both branches
+q = ""
+location_q = ""
+tech_q = ""
+selected_seniority = []
+selected_job_types = []
+selected_remote = []
+selected_tz = []
+
+# --------- Filters (two UIs, same variables) ---------
+if layout_mode.startswith("🖥️"):
+    # DESKTOP: sidebar filters
+    st.sidebar.header("Filters")
+
+    q = st.sidebar.text_input("Search in Job title / Company", "")
+
+    selected_seniority = st.sidebar.multiselect(
         "Seniority",
         options=seniority_options,
         default=[],
     )
 
-    # Job type
-    job_type_options = sorted(
-        s for s in df["job_type"].dropna().unique() if str(s).strip()
-    )
-    selected_job_types = st.multiselect(
+    selected_job_types = st.sidebar.multiselect(
         "Job type",
         options=job_type_options,
         default=[],
     )
 
-    # Remote policy
-    remote_options = sorted(
-        s for s in df["remote_policy"].dropna().unique() if str(s).strip()
-    )
-    selected_remote = st.multiselect(
+    selected_remote = st.sidebar.multiselect(
         "Remote policy",
         options=remote_options,
         default=[],
     )
 
-    # Location contains
-    location_q = st.text_input("Location contains", "")
+    location_q = st.sidebar.text_input("Location contains", "")
 
-    # Timezone overlap
-    tz_options = sorted(
-        s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
-    )
-    # Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
-    tz_options_human = [
-        f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
-        for tz in tz_options
-    ]
-
-    # Selection box uses human labels
-    selected_tz_human = st.multiselect(
+    selected_tz_human = st.sidebar.multiselect(
         "Timezone overlap",
         options=tz_options_human,
         default=[],
         help="Choose the timezones companies expect you to overlap with.",
     )
+    selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
 
-    # Convert back to raw timezone codes
-    selected_tz = [
-        tz.split(" — ")[0] for tz in selected_tz_human
-    ]
+    tech_q = st.sidebar.text_input("Tech stack contains", "")
 
-    # Very simple tech search across all tech_stack.* columns
-    tech_q = st.text_input("Tech stack contains", "")
+else:
+    # MOBILE: filters in an expander on the main page
+    with st.expander("Filters", expanded=True):
+        st.subheader("Filters")
 
+        q = st.text_input("Search in Job title / Company", "")
+
+        selected_seniority = st.multiselect(
+            "Seniority",
+            options=seniority_options,
+            default=[],
+        )
+
+        selected_job_types = st.multiselect(
+            "Job type",
+            options=job_type_options,
+            default=[],
+        )
+
+        selected_remote = st.multiselect(
+            "Remote policy",
+            options=remote_options,
+            default=[],
+        )
+
+        location_q = st.text_input("Location contains", "")
+
+        selected_tz_human = st.multiselect(
+            "Timezone overlap",
+            options=tz_options_human,
+            default=[],
+            help="Choose the timezones companies expect you to overlap with.",
+        )
+        selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
+
+        tech_q = st.text_input("Tech stack contains", "")
 
 # --------- Apply filters ---------
 filtered = df.copy()
