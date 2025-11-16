@@ -85,7 +85,7 @@ st.caption(
     "Daily curated remote jobs by "
     "[Pedro Arroyo](https://www.linkedin.com/in/pedro-andre-arroyo-silva/)"
 )
-st.caption("📅 Dates shown as **YYYY-MM-DD** (year-month-day).")
+st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
@@ -93,7 +93,7 @@ st.write(f"Total jobs in this snapshot: **{len(df)}**")
 st.sidebar.header("Filters")
 
 # Text search (title + company)
-q = st.sidebar.text_input("Search in title / company", "")
+q = st.sidebar.text_input("Search in Job title / Company", "")
 
 # Seniority (normalized)
 seniority_options = sorted(
