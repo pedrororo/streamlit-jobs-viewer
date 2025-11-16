@@ -128,6 +128,7 @@ if pd.notna(salary_min) and pd.notna(salary_max) and salary_max > salary_min:
 else:
     salary_range = None
 
+
 # --------- Apply filters ---------
 filtered = df.copy()
 
@@ -156,5 +157,69 @@ if location_q:
 if selected_tz:
     filtered = filtered[filtered["timezone_overlap"].isin(selected_tz)]
 
+# Very simple tech search across all tech_stack.* columns
 if tech_q:
-    t = tech_q.low_
+    t = tech_q.lower()
+    tech_cols = [
+        "tech_stack.languages",
+        "tech_stack.frameworks",
+        "tech_stack.data",
+        "tech_stack.cloud",
+        "tech_stack.ml",
+    ]
+    mask = False
+    for col in tech_cols:
+        mask = mask | filtered[col].fillna("").str.lower().str.contains(t)
+    filtered = filtered[mask]
+
+# Salary range filter
+if salary_range is not None:
+    low, high = salary_range
+    mask = (
+        (filtered["salary_annual_min"].isna() & filtered["salary_annual_max"].isna())
+        | (
+            (filtered["salary_annual_min"] <= high)
+            & (filtered["salary_annual_max"] >= low)
+        )
+    )
+    filtered = filtered[mask]
+
+st.write(f"Showing **{len(filtered)}** jobs after filters.")
+
+# --------- Table display ---------
+display_cols = [
+    "title",
+    "company",
+    "location",
+    "seniority_norm",
+    "job_type",
+    "remote_policy",
+    "timezone_overlap",
+    "salary_annual_min",
+    "salary_annual_max",
+    "posted_at",
+    "source",
+    "link",
+]
+
+existing_cols = [c for c in display_cols if c in filtered.columns]
+
+st.data_editor(
+    filtered[existing_cols],
+    column_config={
+        "link": st.column_config.LinkColumn("Job link"),
+        "salary_annual_min": st.column_config.NumberColumn("Salary min (annual)"),
+        "salary_annual_max": st.column_config.NumberColumn("Salary max (annual)"),
+    },
+    hide_index=True,
+    use_container_width=True,
+)
+
+# Optional: download filtered as CSV
+csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
+st.download_button(
+    "Download filtered jobs as CSV",
+    data=csv_bytes,
+    file_name="filtered_jobs.csv",
+    mime="text/csv",
+)
