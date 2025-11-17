@@ -78,7 +78,7 @@ SENIORITY_LABELS = {
 
 # --------- Data loader ---------
 @st.cache_data
-def load_jobs(path: Path) -> pd.DataFrame:
+def load_jobs(path: Path, file_mtime: float) -> pd.DataFrame:
     # Your CSV uses ';' as delimiter
     df = pd.read_csv(path, sep=";")
 
@@ -123,7 +123,17 @@ if not DATA_PATH.exists():
     )
     st.stop()
 
-df = load_jobs(DATA_PATH)
+# --------- Load data ---------
+if not DATA_PATH.exists():
+    st.error(
+        f"CSV not found at: {DATA_PATH}\n\n"
+        "Put a file like jobs_refined_YYYY-MM-DD_HH-MM-SS.csv "
+        "there and/or rename it to jobs_latest.csv."
+    )
+    st.stop()
+
+file_mtime = DATA_PATH.stat().st_mtime  # changes whenever the CSV is updated
+df = load_jobs(DATA_PATH, file_mtime)
 
 # --------- Header ---------
 st.title("🌐 Remote/Hybrid Jobs Explorer")
