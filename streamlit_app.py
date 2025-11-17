@@ -10,18 +10,11 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Hide Streamlit Cloud toolbar / GitHub / menu / footer ---
+# --- Hide only the footer (keep header so sidebar toggle works) ---
 st.markdown(
     """
     <style>
-    /* Top-right toolbar (includes GitHub/fork link on Streamlit Cloud) */
-    [data-testid="stToolbar"] {visibility: hidden !important;}
-
-    /* Optional: hide footer "Made with Streamlit" */
     footer {visibility: hidden !important;}
-
-    /* Optional: hide the top header decoration bar */
-    [data-testid="stDecoration"] {visibility: hidden !important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -96,11 +89,8 @@ def load_jobs(path: Path) -> pd.DataFrame:
 
     # Try to parse posted_at as datetime for sorting + create nice date string
     if "posted_at" in df.columns:
-        # Handle ISO strings like 2025-11-15T00:36:09Z
         df["posted_at_dt"] = pd.to_datetime(df["posted_at"], errors="coerce", utc=True)
         df = df.sort_values("posted_at_dt", ascending=False)
-
-        # New column: YYYY-MM-DD (year-month-day)
         df["posted_date"] = df["posted_at_dt"].dt.strftime("%Y-%m-%d")
     else:
         df["posted_date"] = ""
@@ -163,7 +153,6 @@ remote_options = sorted(
 tz_options = sorted(
     s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
 )
-# Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
 tz_options_human = [
     f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
     for tz in tz_options
@@ -172,12 +161,9 @@ tz_options_human = [
 # --------- Layout selector (PC vs Mobile) ---------
 layout_mode = st.radio(
     "Layout mode",
-    ("🖥️ Desktop (left panel)", "📱 Mobile (top filters)"),
+    ("🖥️ Desktop (sidebar filters)", "📱 Mobile (top filters)"),
     horizontal=True,
 )
-
-# This will point to the column/container where we draw the table
-table_container = st
 
 # Initialize filter variables
 q = ""
@@ -190,46 +176,42 @@ selected_tz = []
 
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
-    # DESKTOP: left column = filters, right column = table
-    filter_col, table_col = st.columns([1, 3])
-    table_container = table_col
+    # DESKTOP: sidebar filters (with << collapse)
+    st.sidebar.header("Filters")
 
-    with filter_col:
-        st.subheader("Filters")
+    q = st.sidebar.text_input("Search in Job title / Company", "")
 
-        q = st.text_input("Search in Job title / Company", "")
+    selected_seniority = st.sidebar.multiselect(
+        "Seniority",
+        options=seniority_options,
+        default=[],
+        format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
+    )
 
-        selected_seniority = st.multiselect(
-            "Seniority",
-            options=seniority_options,
-            default=[],
-            format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
-        )
+    selected_job_types = st.sidebar.multiselect(
+        "Job type",
+        options=job_type_options,
+        default=[],
+    )
 
-        selected_job_types = st.multiselect(
-            "Job type",
-            options=job_type_options,
-            default=[],
-        )
+    selected_remote = st.sidebar.multiselect(
+        "Remote policy",
+        options=remote_options,
+        default=[],
+        format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
+    )
 
-        selected_remote = st.multiselect(
-            "Remote policy",
-            options=remote_options,
-            default=[],
-            format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
-        )
+    location_q = st.sidebar.text_input("Location contains", "")
 
-        location_q = st.text_input("Location contains", "")
+    selected_tz_human = st.sidebar.multiselect(
+        "Timezone overlap",
+        options=tz_options_human,
+        default=[],
+        help="Choose the timezones companies expect you to overlap with.",
+    )
+    selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
 
-        selected_tz_human = st.multiselect(
-            "Timezone overlap",
-            options=tz_options_human,
-            default=[],
-            help="Choose the timezones companies expect you to overlap with.",
-        )
-        selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
-
-        tech_q = st.text_input("Tech stack contains", "")
+    tech_q = st.sidebar.text_input("Tech stack contains", "")
 
 else:
     # MOBILE: filters in an expander on the main page
@@ -269,7 +251,6 @@ else:
         selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
 
         tech_q = st.text_input("Tech stack contains", "")
-
 
 # --------- Apply filters ---------
 filtered = df.copy()
@@ -313,8 +294,7 @@ if tech_q:
         mask = mask | filtered[col].fillna("").str.lower().str.contains(t)
     filtered = filtered[mask]
 
-with table_container:
-    st.write(f"Showing **{len(filtered)}** jobs after filters.")
+st.write(f"Showing **{len(filtered)}** jobs after filters.")
 
 # --------- Table display ---------
 filtered = filtered.copy()
@@ -384,19 +364,17 @@ for col in existing_cols:
         label = col_labels.get(col, col)
         column_config[col] = st.column_config.TextColumn(label)
 
-with table_container:
-    st.data_editor(
-        filtered[existing_cols],
-        column_config=column_config,
-        hide_index=True,
-        width="stretch",  # replaces use_container_width
-    )
+st.data_editor(
+    filtered[existing_cols],
+    column_config=column_config,
+    hide_index=True,
+    width="stretch",  # replaces use_container_width
+)
 
-    # Optional: download filtered as CSV
-    csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
-    st.download_button(
-        "Download filtered jobs as CSV",
-        data=csv_bytes,
-        file_name="filtered_jobs.csv",
-        mime="text/csv",
-    )
+csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
+st.download_button(
+    "Download filtered jobs as CSV",
+    data=csv_bytes,
+    file_name="filtered_jobs.csv",
+    mime="text/csv",
+)
