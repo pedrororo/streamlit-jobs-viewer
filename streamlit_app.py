@@ -41,20 +41,20 @@ TIMEZONE_DETAILS = {
     "EST": "Eastern Standard Time (UTC-5) — e.g., New York, Boston, Miami",
     "EDT": "Eastern Daylight Time (UTC-4, summer)",
     "ET":  "Eastern Time (EST/EDT)",
-    
+
     "GMT": "Greenwich Mean Time (UTC+0)",
     "BST": "British Summer Time (UTC+1) — UK summer",
-    
+
     "CET": "Central European Time (UTC+1) — e.g., Germany, France",
     "CEST": "Central European Summer Time (UTC+2)",
-    
+
     "EET": "Eastern European Time (UTC+2)",
     "EEST": "Eastern European Summer Time (UTC+3)",
 
     "IST": "India Standard Time (UTC+5:30)",
     "WAT": "West Africa Time (UTC+1)",
     "EAT": "East Africa Time (UTC+3)",
-    
+
     "JST": "Japan Standard Time (UTC+9)",
     "AEST": "Australian Eastern Standard Time (UTC+10)",
     "AEDT": "Australian Eastern Daylight Time (UTC+11)",
@@ -81,7 +81,6 @@ SENIORITY_LABELS = {
     "vp": "VP",
     "c_level": "C-level",
 }
-
 
 
 # --------- Data loader ---------
@@ -124,6 +123,8 @@ def load_jobs(path: Path) -> pd.DataFrame:
 
     return df
 
+
+# --------- Load data ---------
 if not DATA_PATH.exists():
     st.error(
         f"CSV not found at: {DATA_PATH}\n\n"
@@ -144,6 +145,30 @@ st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
+# --------- Prepare filter option lists (shared) ---------
+seniority_options = sorted(
+    s
+    for s in df["seniority_norm"].dropna().unique()
+    if str(s).strip() and str(s).lower() != "unspecified"
+)
+
+job_type_options = sorted(
+    s for s in df["job_type"].dropna().unique() if str(s).strip()
+)
+
+remote_options = sorted(
+    s for s in df["remote_policy"].dropna().unique() if str(s).strip()
+)
+
+tz_options = sorted(
+    s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
+)
+# Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
+tz_options_human = [
+    f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
+    for tz in tz_options
+]
+
 # --------- Layout selector (PC vs Mobile) ---------
 layout_mode = st.radio(
     "Layout mode",
@@ -151,7 +176,7 @@ layout_mode = st.radio(
     horizontal=True,
 )
 
-# Container where we will draw the table (right column on desktop, full width on mobile)
+# This will point to the column/container where we draw the table
 table_container = st
 
 # Initialize filter variables
@@ -244,6 +269,7 @@ else:
         selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
 
         tech_q = st.text_input("Tech stack contains", "")
+
 
 # --------- Apply filters ---------
 filtered = df.copy()
@@ -374,4 +400,3 @@ with table_container:
         file_name="filtered_jobs.csv",
         mime="text/csv",
     )
-
