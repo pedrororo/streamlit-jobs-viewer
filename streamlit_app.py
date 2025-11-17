@@ -308,11 +308,25 @@ st.write(f"Showing **{len(filtered)}** jobs after filters.")
 # --------- Table display ---------
 # First: create human-friendly versions for display
 filtered = filtered.copy()
+
+# Make sure base columns are strings before mapping
+filtered["remote_policy"] = filtered["remote_policy"].astype("string")
+filtered["seniority_norm"] = filtered["seniority_norm"].astype("string")
+
 filtered["remote_policy_pretty"] = (
-    filtered["remote_policy"].map(REMOTE_LABELS).fillna(filtered["remote_policy"])
+    filtered["remote_policy"]
+    .map(REMOTE_LABELS)
+    .fillna(filtered["remote_policy"])
+    .fillna("")          # avoid NaN
+    .astype("string")    # <-- force text dtype
 )
+
 filtered["seniority_pretty"] = (
-    filtered["seniority_norm"].map(SENIORITY_LABELS).fillna(filtered["seniority_norm"])
+    filtered["seniority_norm"]
+    .map(SENIORITY_LABELS)
+    .fillna(filtered["seniority_norm"])
+    .fillna("")
+    .astype("string")    # <-- force text dtype
 )
 
 display_cols = [
@@ -329,6 +343,11 @@ display_cols = [
 ]
 
 existing_cols = [c for c in display_cols if c in filtered.columns]
+
+# Also coerce all display columns to string except link/posted_date
+for col in existing_cols:
+    if col not in ("link", "posted_date"):
+        filtered[col] = filtered[col].astype("string")
 
 # Human-friendly labels for each column
 col_labels = {
@@ -356,12 +375,14 @@ for col in existing_cols:
         label = col_labels.get(col, col)
         column_config[col] = st.column_config.TextColumn(label)
 
+# ⚠️ use_container_width is deprecated → use width="stretch"
 st.data_editor(
     filtered[existing_cols],
     column_config=column_config,
     hide_index=True,
-    use_container_width=True,
+    width="stretch",
 )
+
 
 # Optional: download filtered as CSV
 csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
