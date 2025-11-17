@@ -171,7 +171,7 @@ tz_options_human = [
 # --------- Layout selector (PC vs Mobile) ---------
 layout_mode = st.radio(
     "Layout mode",
-    ("🖥️ Desktop (sidebar filters)", "📱 Mobile (top filters)"),
+    ("🖥️ Desktop (left panel)", "📱 Mobile (top filters)"),
     horizontal=True,
 )
 
@@ -186,41 +186,45 @@ selected_tz = []
 
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
-    # DESKTOP: sidebar filters
-    st.sidebar.header("Filters")
+    # DESKTOP: fixed left column, no sidebar
+    filter_col, _ = st.columns([1, 3])
 
-    q = st.sidebar.text_input("Search in Job title / Company", "")
+    with filter_col:
+        st.subheader("Filters")
 
-    selected_seniority = st.sidebar.multiselect(
-        "Seniority",
-        options=seniority_options,
-        default=[],
-        format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
-    )
+        q = st.text_input("Search in Job title / Company", "")
 
-    selected_job_types = st.sidebar.multiselect(
-        "Job type",
-        options=job_type_options,
-        default=[],
-    )
+        selected_seniority = st.multiselect(
+            "Seniority",
+            options=seniority_options,
+            default=[],
+            format_func=lambda v: SENIORITY_LABELS.get(v, v.title()),
+        )
 
-    selected_remote = st.sidebar.multiselect(
-        "Remote policy",
-        options=remote_options,
-        default=[],
-        format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
-    )
-    location_q = st.sidebar.text_input("Location contains", "")
+        selected_job_types = st.multiselect(
+            "Job type",
+            options=job_type_options,
+            default=[],
+        )
 
-    selected_tz_human = st.sidebar.multiselect(
-        "Timezone overlap",
-        options=tz_options_human,
-        default=[],
-        help="Choose the timezones companies expect you to overlap with.",
-    )
-    selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
+        selected_remote = st.multiselect(
+            "Remote policy",
+            options=remote_options,
+            default=[],
+            format_func=lambda v: REMOTE_LABELS.get(v, v.replace("_", " ").title()),
+        )
 
-    tech_q = st.sidebar.text_input("Tech stack contains", "")
+        location_q = st.text_input("Location contains", "")
+
+        selected_tz_human = st.multiselect(
+            "Timezone overlap",
+            options=tz_options_human,
+            default=[],
+            help="Choose the timezones companies expect you to overlap with.",
+        )
+        selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
+
+        tech_q = st.text_input("Tech stack contains", "")
 
 else:
     # MOBILE: filters in an expander on the main page
@@ -260,6 +264,7 @@ else:
         selected_tz = [tz.split(" — ")[0] for tz in selected_tz_human]
 
         tech_q = st.text_input("Tech stack contains", "")
+
 
 # --------- Apply filters ---------
 filtered = df.copy()
