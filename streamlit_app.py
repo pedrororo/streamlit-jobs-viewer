@@ -144,30 +144,6 @@ st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
 st.write(f"Total jobs in this snapshot: **{len(df)}**")
 
-# --------- Prepare filter option lists (shared) ---------
-seniority_options = sorted(
-    s
-    for s in df["seniority_norm"].dropna().unique()
-    if str(s).strip() and str(s).lower() != "unspecified"
-)
-
-job_type_options = sorted(
-    s for s in df["job_type"].dropna().unique() if str(s).strip()
-)
-
-remote_options = sorted(
-    s for s in df["remote_policy"].dropna().unique() if str(s).strip()
-)
-
-tz_options = sorted(
-    s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
-)
-# Build human-friendly labels like: "EST — Eastern Standard Time (UTC-5)"
-tz_options_human = [
-    f"{tz} — {TIMEZONE_DETAILS.get(tz, 'Unknown timezone')}"
-    for tz in tz_options
-]
-
 # --------- Layout selector (PC vs Mobile) ---------
 layout_mode = st.radio(
     "Layout mode",
@@ -175,7 +151,10 @@ layout_mode = st.radio(
     horizontal=True,
 )
 
-# Initialize variables so they exist in both branches
+# Container where we will draw the table (right column on desktop, full width on mobile)
+table_container = st
+
+# Initialize filter variables
 q = ""
 location_q = ""
 tech_q = ""
@@ -186,8 +165,9 @@ selected_tz = []
 
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
-    # DESKTOP: fixed left column, no sidebar
-    filter_col, _ = st.columns([1, 3])
+    # DESKTOP: left column = filters, right column = table
+    filter_col, table_col = st.columns([1, 3])
+    table_container = table_col
 
     with filter_col:
         st.subheader("Filters")
@@ -265,7 +245,6 @@ else:
 
         tech_q = st.text_input("Tech stack contains", "")
 
-
 # --------- Apply filters ---------
 filtered = df.copy()
 
@@ -308,10 +287,10 @@ if tech_q:
         mask = mask | filtered[col].fillna("").str.lower().str.contains(t)
     filtered = filtered[mask]
 
-st.write(f"Showing **{len(filtered)}** jobs after filters.")
+with table_container:
+    st.write(f"Showing **{len(filtered)}** jobs after filters.")
 
 # --------- Table display ---------
-# First: create human-friendly versions for display
 filtered = filtered.copy()
 
 # Make sure base columns are strings before mapping
@@ -322,8 +301,8 @@ filtered["remote_policy_pretty"] = (
     filtered["remote_policy"]
     .map(REMOTE_LABELS)
     .fillna(filtered["remote_policy"])
-    .fillna("")          # avoid NaN
-    .astype("string")    # <-- force text dtype
+    .fillna("")
+    .astype("string")
 )
 
 filtered["seniority_pretty"] = (
@@ -331,7 +310,7 @@ filtered["seniority_pretty"] = (
     .map(SENIORITY_LABELS)
     .fillna(filtered["seniority_norm"])
     .fillna("")
-    .astype("string")    # <-- force text dtype
+    .astype("string")
 )
 
 display_cols = [
@@ -349,7 +328,7 @@ display_cols = [
 
 existing_cols = [c for c in display_cols if c in filtered.columns]
 
-# Also coerce all display columns to string except link/posted_date
+# Coerce all display columns (except link/posted_date) to string
 for col in existing_cols:
     if col not in ("link", "posted_date"):
         filtered[col] = filtered[col].astype("string")
@@ -374,26 +353,25 @@ column_config = {
     "posted_date": st.column_config.TextColumn(col_labels["posted_date"]),
 }
 
-# For the remaining columns, use TextColumn with friendly names
 for col in existing_cols:
     if col not in column_config:
         label = col_labels.get(col, col)
         column_config[col] = st.column_config.TextColumn(label)
 
-# ⚠️ use_container_width is deprecated → use width="stretch"
-st.data_editor(
-    filtered[existing_cols],
-    column_config=column_config,
-    hide_index=True,
-    width="stretch",
-)
+with table_container:
+    st.data_editor(
+        filtered[existing_cols],
+        column_config=column_config,
+        hide_index=True,
+        width="stretch",  # replaces use_container_width
+    )
 
+    # Optional: download filtered as CSV
+    csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
+    st.download_button(
+        "Download filtered jobs as CSV",
+        data=csv_bytes,
+        file_name="filtered_jobs.csv",
+        mime="text/csv",
+    )
 
-# Optional: download filtered as CSV
-csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
-st.download_button(
-    "Download filtered jobs as CSV",
-    data=csv_bytes,
-    file_name="filtered_jobs.csv",
-    mime="text/csv",
-)
