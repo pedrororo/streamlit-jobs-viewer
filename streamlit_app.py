@@ -6,7 +6,7 @@ from pathlib import Path
 DATA_PATH = Path("data/jobs_latest.csv")  # rename your file to this or adjust path
 
 st.set_page_config(
-    page_title="Remote Jobs Explorer",
+    page_title="Remote/Hybrid Jobs Viewer",
     layout="wide",
 )
 
@@ -136,7 +136,7 @@ file_mtime = DATA_PATH.stat().st_mtime  # changes whenever the CSV is updated
 df = load_jobs(DATA_PATH, file_mtime)
 
 # --------- Header ---------
-st.title("🌐 Remote/Hybrid Jobs Explorer")
+st.title("🌐 Remote/Hybrid Jobs Viewer")
 st.caption(
     "Daily curated remote jobs by "
     "[Pedro Arroyo](https://www.linkedin.com/in/pedro-andre-arroyo-silva/)"
