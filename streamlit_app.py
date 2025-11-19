@@ -14,8 +14,6 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    [data-testid="stToolbar"] {visibility: hidden !important;}
-    #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     </style>
     """,
