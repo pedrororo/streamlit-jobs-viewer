@@ -395,7 +395,27 @@ st.data_editor(
     width="stretch",  # replaces use_container_width
 )
 
-csv_bytes = filtered.to_csv(index=False, sep=";").encode("utf-8")
+# --- Download Button: Ensure it downloads exactly what's shown in the table ---
+# Create a copy of the filtered data with the exact same columns and order as displayed
+download_df = filtered[existing_cols].copy()
+
+# Rename columns to match the display labels (optional, but makes it more user-friendly)
+download_df.rename(columns={
+    "title": "Job title",
+    "company": "Company",
+    "location": "Location",
+    "seniority_pretty": "Seniority",
+    "job_type": "Job type",
+    "remote_policy_pretty": "Remote policy",
+    "timezone_overlap": "Timezone overlap",
+    "posted_date": "Posted",
+    "source": "Source",
+    "link": "Apply / Job link"
+}, inplace=True)
+
+# Convert to CSV with the same delimiter as your source file (;)
+csv_bytes = download_df.to_csv(index=False, sep=";").encode("utf-8")
+
 st.download_button(
     "Download filtered jobs as CSV",
     data=csv_bytes,
