@@ -75,7 +75,6 @@ SENIORITY_LABELS = {
     "c_level": "C-level",
 }
 
-
 # --------- Data loader ---------
 @st.cache_data
 def load_jobs(path: Path, file_mtime: float) -> pd.DataFrame:
@@ -95,7 +94,7 @@ def load_jobs(path: Path, file_mtime: float) -> pd.DataFrame:
     else:
         df["posted_date"] = ""
 
-    # Ensure some optional columns exist so filters don’t crash
+    # Ensure some optional columns exist so filters don't crash
     for col in [
         "seniority_norm",
         "location",
@@ -112,16 +111,6 @@ def load_jobs(path: Path, file_mtime: float) -> pd.DataFrame:
             df[col] = ""
 
     return df
-
-
-# --------- Load data ---------
-if not DATA_PATH.exists():
-    st.error(
-        f"CSV not found at: {DATA_PATH}\n\n"
-        "Put a file like jobs_refined_YYYY-MM-DD_HH-MM-SS.csv "
-        "there and/or rename it to jobs_latest.csv."
-    )
-    st.stop()
 
 # --------- Load data ---------
 if not DATA_PATH.exists():
@@ -160,6 +149,11 @@ remote_options = sorted(
     s for s in df["remote_policy"].dropna().unique() if str(s).strip()
 )
 
+# NEW: Company options for filtering
+company_options = sorted(
+    s for s in df["company"].dropna().unique() if str(s).strip()
+)
+
 tz_options = sorted(
     s for s in df["timezone_overlap"].dropna().unique() if str(s).strip()
 )
@@ -183,13 +177,22 @@ selected_seniority = []
 selected_job_types = []
 selected_remote = []
 selected_tz = []
+selected_companies = []  # NEW: Initialize company selection
 
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
     # DESKTOP: sidebar filters (with << collapse)
     st.sidebar.header("Filters")
 
-    q = st.sidebar.text_input("Search in Job title / Company", "")
+    q = st.sidebar.text_input("Search in Job title", "")
+
+    # NEW: Add company multiselect filter
+    selected_companies = st.sidebar.multiselect(
+        "Choose by Company",
+        options=company_options,
+        default=[],
+        help="Select specific companies to filter by. Leave empty to see all companies.",
+    )
 
     selected_seniority = st.sidebar.multiselect(
         "Seniority",
@@ -228,7 +231,15 @@ else:
     with st.expander("Filters", expanded=True):
         st.subheader("Filters")
 
-        q = st.text_input("Search in Job title / Company", "")
+        q = st.text_input("Search in Job title", "")
+
+        # NEW: Add company multiselect filter
+        selected_companies = st.multiselect(
+            "Choose by Company",
+            options=company_options,
+            default=[],
+            help="Select specific companies to filter by. Leave empty to see all companies.",
+        )
 
         selected_seniority = st.multiselect(
             "Seniority",
@@ -269,8 +280,11 @@ if q:
     q_low = q.lower()
     filtered = filtered[
         filtered["title"].fillna("").str.lower().str.contains(q_low)
-        | filtered["company"].fillna("").str.lower().str.contains(q_low)
     ]
+
+# NEW: Apply company filter
+if selected_companies:
+    filtered = filtered[filtered["company"].isin(selected_companies)]
 
 if selected_seniority:
     filtered = filtered[filtered["seniority_norm"].isin(selected_seniority)]
