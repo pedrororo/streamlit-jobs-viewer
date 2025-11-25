@@ -17,8 +17,8 @@ st.markdown(
     <style>
     footer {visibility: hidden !important;}
 
-    /* Hide the download button in st.data_editor / st.dataframe toolbar */
-    [data-testid="stDataFrameDownloadButton"] {
+    /* Fallback: hide entire data editor toolbar */
+    [data-testid="stDataFrameToolbar"] {
         display: none !important;
     }
     </style>
