@@ -139,9 +139,9 @@ st.caption(
 )
 st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
-# st.write(
-#     f"Total jobs in this snapshot: **{MAX_ROWS}** "
-# )
+total_snapshot = len(df)
+st.write(f"Total jobs in this snapshot (before filters): **{total_snapshot}**")
+
 
 # --------- Prepare filter option lists (shared) ---------
 seniority_options = sorted(
@@ -332,10 +332,17 @@ total_after_filters = len(filtered)
 #     )
 shown = filtered.head(MAX_ROWS).copy()
 
-# st.write(
-#     # f"Showing **{len(shown)}** jobs "
-#     f"(out of **{total_after_filters}** after filters)."
-# )
+# Info sobre o resultado após filtros e limite
+st.write(
+    f"Jobs shown after filters: **{len(shown)}** "
+    f"(out of **{total_after_filters}** matches)."
+)
+
+if total_after_filters > MAX_ROWS:
+    st.caption(
+        f"Filters matched {total_after_filters} jobs, "
+        f"but only the first {MAX_ROWS} are displayed."
+    )
 
 # --------- Table display ---------
 shown["remote_policy"] = shown["remote_policy"].astype("string")
