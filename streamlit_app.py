@@ -16,6 +16,11 @@ st.markdown(
     """
     <style>
     footer {visibility: hidden !important;}
+
+    /* Hide the download button in st.data_editor / st.dataframe toolbar */
+    [data-testid="stDataFrameDownloadButton"] {
+        display: none !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
