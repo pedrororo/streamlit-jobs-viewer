@@ -17,14 +17,15 @@ st.markdown(
     <style>
     footer {visibility: hidden !important;}
 
-    /* Fallback: hide entire data editor toolbar */
-    [data-testid="stDataFrameToolbar"] {
+    /* Hide the entire toolbar (eye, download, search, fullscreen) */
+    [data-testid="stElementToolbar"] {
         display: none !important;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 # --------- Timezone info (expanded/human-friendly) ---------
 TIMEZONE_DETAILS = {
