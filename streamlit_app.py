@@ -319,11 +319,11 @@ if tech_q:
 
 # ---- Limit to MAX_ROWS for display ----
 total_after_filters = len(filtered)
-if total_after_filters > MAX_ROWS:
-    st.warning(
-        f"Filters matched **{total_after_filters}** jobs. "
-        f"Showing only the first **{MAX_ROWS}**."
-    )
+# if total_after_filters > MAX_ROWS:
+#     st.warning(
+#         f"Filters matched **{total_after_filters}** jobs. "
+#         f"Showing only the first **{MAX_ROWS}**."
+#     )
 shown = filtered.head(MAX_ROWS).copy()
 
 # st.write(
