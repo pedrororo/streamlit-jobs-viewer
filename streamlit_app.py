@@ -4,6 +4,7 @@ from pathlib import Path
 
 # --------- Config ---------
 DATA_PATH = Path("data/jobs_latest.csv")  # rename your file to this or adjust path
+MAX_ROWS = 6000  # hard cap for displayed jobs
 
 st.set_page_config(
     page_title="Remote/Hybrid Jobs Viewer",
@@ -132,7 +133,10 @@ st.caption(
 )
 st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
-st.write(f"Total jobs in this snapshot: **{len(df)}**")
+st.write(
+    f"Total jobs in this snapshot: **{len(df)}** "
+    f"(viewer shows up to **{MAX_ROWS}** rows at once)."
+)
 
 # --------- Prepare filter option lists (shared) ---------
 seniority_options = sorted(
@@ -149,7 +153,6 @@ remote_options = sorted(
     s for s in df["remote_policy"].dropna().unique() if str(s).strip()
 )
 
-# NEW: Company options for filtering
 company_options = sorted(
     s for s in df["company"].dropna().unique() if str(s).strip()
 )
@@ -177,16 +180,15 @@ selected_seniority = []
 selected_job_types = []
 selected_remote = []
 selected_tz = []
-selected_companies = []  # NEW: Initialize company selection
+selected_companies = []
 
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
-    # DESKTOP: sidebar filters (with << collapse)
+    # DESKTOP: sidebar filters
     st.sidebar.header("Filters")
 
     q = st.sidebar.text_input("Search in Job title", "")
 
-    # NEW: Add company multiselect filter
     selected_companies = st.sidebar.multiselect(
         "Choose by Company",
         options=company_options,
@@ -233,7 +235,6 @@ else:
 
         q = st.text_input("Search in Job title", "")
 
-        # NEW: Add company multiselect filter
         selected_companies = st.multiselect(
             "Choose by Company",
             options=company_options,
@@ -282,7 +283,6 @@ if q:
         filtered["title"].fillna("").str.lower().str.contains(q_low)
     ]
 
-# NEW: Apply company filter
 if selected_companies:
     filtered = filtered[filtered["company"].isin(selected_companies)]
 
@@ -318,27 +318,36 @@ if tech_q:
         mask = mask | filtered[col].fillna("").str.lower().str.contains(t)
     filtered = filtered[mask]
 
-st.write(f"Showing **{len(filtered)}** jobs after filters.")
+# ---- Limit to MAX_ROWS for display ----
+total_after_filters = len(filtered)
+if total_after_filters > MAX_ROWS:
+    st.warning(
+        f"Filters matched **{total_after_filters}** jobs. "
+        f"Showing only the first **{MAX_ROWS}**."
+    )
+shown = filtered.head(MAX_ROWS).copy()
+
+st.write(
+    f"Showing **{len(shown)}** jobs "
+    f"(out of **{total_after_filters}** after filters)."
+)
 
 # --------- Table display ---------
-filtered = filtered.copy()
+shown["remote_policy"] = shown["remote_policy"].astype("string")
+shown["seniority_norm"] = shown["seniority_norm"].astype("string")
 
-# Make sure base columns are strings before mapping
-filtered["remote_policy"] = filtered["remote_policy"].astype("string")
-filtered["seniority_norm"] = filtered["seniority_norm"].astype("string")
-
-filtered["remote_policy_pretty"] = (
-    filtered["remote_policy"]
+shown["remote_policy_pretty"] = (
+    shown["remote_policy"]
     .map(REMOTE_LABELS)
-    .fillna(filtered["remote_policy"])
+    .fillna(shown["remote_policy"])
     .fillna("")
     .astype("string")
 )
 
-filtered["seniority_pretty"] = (
-    filtered["seniority_norm"]
+shown["seniority_pretty"] = (
+    shown["seniority_norm"]
     .map(SENIORITY_LABELS)
-    .fillna(filtered["seniority_norm"])
+    .fillna(shown["seniority_norm"])
     .fillna("")
     .astype("string")
 )
@@ -356,14 +365,13 @@ display_cols = [
     "link",
 ]
 
-existing_cols = [c for c in display_cols if c in filtered.columns]
+existing_cols = [c for c in display_cols if c in shown.columns]
 
 # Coerce all display columns (except link/posted_date) to string
 for col in existing_cols:
     if col not in ("link", "posted_date"):
-        filtered[col] = filtered[col].astype("string")
+        shown[col] = shown[col].astype("string")
 
-# Human-friendly labels for each column
 col_labels = {
     "title": "Job title",
     "company": "Company",
@@ -377,7 +385,6 @@ col_labels = {
     "link": "Apply / Job link",
 }
 
-# Build column_config with nice labels
 column_config = {
     "link": st.column_config.LinkColumn(col_labels["link"]),
     "posted_date": st.column_config.TextColumn(col_labels["posted_date"]),
@@ -389,36 +396,8 @@ for col in existing_cols:
         column_config[col] = st.column_config.TextColumn(label)
 
 st.data_editor(
-    filtered[existing_cols],
+    shown[existing_cols],
     column_config=column_config,
     hide_index=True,
-    width="stretch",  # replaces use_container_width
-)
-
-# --- Download Button: Ensure it downloads exactly what's shown in the table ---
-# Create a copy of the filtered data with the exact same columns and order as displayed
-download_df = filtered[existing_cols].copy()
-
-# Rename columns to match the display labels (optional, but makes it more user-friendly)
-download_df.rename(columns={
-    "title": "Job title",
-    "company": "Company",
-    "location": "Location",
-    "seniority_pretty": "Seniority",
-    "job_type": "Job type",
-    "remote_policy_pretty": "Remote policy",
-    "timezone_overlap": "Timezone overlap",
-    "posted_date": "Posted",
-    "source": "Source",
-    "link": "Apply / Job link"
-}, inplace=True)
-
-# Convert to CSV with the same delimiter as your source file (;)
-csv_bytes = download_df.to_csv(index=False, sep=";").encode("utf-8")
-
-st.download_button(
-    "Download filtered jobs as CSV",
-    data=csv_bytes,
-    file_name="filtered_jobs.csv",
-    mime="text/csv",
+    width="stretch",
 )
