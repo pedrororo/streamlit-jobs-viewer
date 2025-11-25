@@ -134,8 +134,7 @@ st.caption(
 st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 
 st.write(
-    f"Total jobs in this snapshot: **{len(df)}** "
-    f"(viewer shows up to **{MAX_ROWS}** rows at once)."
+    f"Total jobs in this snapshot: **{MAX_ROWS}** "
 )
 
 # --------- Prepare filter option lists (shared) ---------
