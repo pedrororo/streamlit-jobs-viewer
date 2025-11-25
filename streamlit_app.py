@@ -326,10 +326,10 @@ if total_after_filters > MAX_ROWS:
     )
 shown = filtered.head(MAX_ROWS).copy()
 
-st.write(
-    f"Showing **{len(shown)}** jobs "
-    f"(out of **{total_after_filters}** after filters)."
-)
+# st.write(
+#     f"Showing **{len(shown)}** jobs "
+#     f"(out of **{total_after_filters}** after filters)."
+# )
 
 # --------- Table display ---------
 shown["remote_policy"] = shown["remote_policy"].astype("string")
