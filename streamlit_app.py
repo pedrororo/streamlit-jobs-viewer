@@ -333,10 +333,8 @@ total_after_filters = len(filtered)
 shown = filtered.head(MAX_ROWS).copy()
 
 # Info sobre o resultado após filtros e limite
-st.write(
-    f"Jobs shown after filters: **{len(shown)}** "
-    f"(out of **{total_after_filters}** matches)."
-)
+st.write(f"Jobs shown after filters: **{len(shown)}**")
+
 
 if total_after_filters > MAX_ROWS:
     st.caption(
