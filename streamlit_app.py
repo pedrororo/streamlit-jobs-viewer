@@ -27,6 +27,15 @@ st.markdown(
 )
 
 
+st.markdown("""
+### 🔗 Static HTML version (no login, no install)
+Open the full dashboard directly in your browser:
+
+👉 https://pedrororo.github.io/remote-jobs-dashboard/
+""")
+
+
+
 # --------- Timezone info (expanded/human-friendly) ---------
 TIMEZONE_DETAILS = {
     "PST": "Pacific Standard Time (UTC-8) — e.g., California, Washington",
