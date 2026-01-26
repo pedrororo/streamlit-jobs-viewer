@@ -27,14 +27,6 @@ st.markdown(
 )
 
 
-st.markdown("""
-### 🔗 Static HTML version (no login, no install)
-Open the full dashboard directly in your browser:
-
-👉 https://pedrororo.github.io/remote-jobs-dashboard/
-""")
-
-
 
 # --------- Timezone info (expanded/human-friendly) ---------
 TIMEZONE_DETAILS = {
@@ -151,6 +143,16 @@ st.caption("📅 Dates shown as **YYYY-MM-DD**.")
 total_snapshot = len(df)
 st.write(f"Total jobs in this snapshot (before filters): **{total_snapshot}**")
 
+st.markdown(
+    """
+### 🔗 Static HTML version (no login, no install)
+Open the full dashboard directly in your browser:
+
+👉 https://pedrororo.github.io/remote-jobs-dashboard/
+"""
+)
+
+
 
 # --------- Prepare filter option lists (shared) ---------
 seniority_options = sorted(
@@ -199,6 +201,8 @@ selected_companies = []
 # --------- Filters (two UIs, same variables) ---------
 if layout_mode.startswith("🖥️"):
     # DESKTOP: sidebar filters
+    st.sidebar.markdown("### 🔗 Static HTML")
+    st.sidebar.markdown("👉 https://pedrororo.github.io/remote-jobs-dashboard/")
     st.sidebar.header("Filters")
 
     q = st.sidebar.text_input("Search in Job title", "")
